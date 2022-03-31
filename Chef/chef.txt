@@ -1,0 +1,236 @@
+********Download workstation*********
+wget https://packages.chef.io/files/stable/chef-workstation/21.8.555/el/8/chef-workstation-21.8.555-1.el8.x86_64.rpm
+
+***To install chef workstation*********
+yum install <chef-workstation-packages> -y
+***To install tree rpm *****
+yum install tree -y
+
+******Version Check******
+chef --version / chef -v
+******To check chef install location******
+which chef
+
+-----Chef is configuration management tool. Chef works on pull base mechanism.
+-----Support Ruby language
+
+**********chef work location********************
+mkdir /data/cookbooks
+cd /data/cookbooks
+
+***To create cookbook [goto inside cookbooks folder]****
+chef generate cookbook <cookbookname>
+***To create cookbook [goto inside respective cookbook folder]****
+chef generate recipe <recipename>
+
+***To write ruby code / program / command for automate operation***
+Note : goto in cookbooks location i.e cd /data/cookbooks
+
+vi <cookbookname>/recipes/<recipename>
+
+***To check syntax***-
+chef exec ruby -c <filepath>
+eg. chef exec ruby -c cbdemo/recipes/demo-recipe.rb
+***To run locally***-
+chef-client -zr "recipe[<cookbookname>::<recipename>]"
+eg. chef-client -zr "recipe[cbdemo::demo-recipe]"
+
+
+********Ruby code examples*****************
+directory '/data/devops/' do
+  owner 'redhat'
+  group 'root'
+  mode '0755'
+  action :create
+end
+
+*********
+
+file '/data/devops/myfile.txt' do
+content 'Hello Pankaj!!!!!! Welcome to you in chef lecture
+'
+action :create
+end
+
+*********
+
+
+package 'tree' do
+action :install
+end
+
+file '/data/myfile2.txt' do
+content 'This is My ruby code created file'
+action :create
+owner 'root'
+group 'root'
+end
+
+*********
+package 'httpd' do
+action :install
+end
+
+file '/var/www/html/index.html' do
+content 'Hello Pankaj!!!!!!!!!!!!!!'
+action :create
+end
+
+
+service 'httpd' do
+action [:enable, :start]
+end
+
+
+
+
+
+Type of Attributes
+1. default
+2. force_default
+3. normal
+4. override
+5. force_override
+6. automatic
+
+Priority -->	automatic (highest)  -------  default (lowest)
+Attributes define in --> ohai (highest)  -------  default (middle) ------ file (lowest)
+
+************-ohai Attributes************
+ohai
+ohai ipaddress
+ohai hostname
+ohai memory/total
+ohai cpu
+ohai cpu/0/mhz
+history | grep ohai
+
+
+
+
+********Ruby code examples*****************
+file '/data/basicinfo' do
+ content "This is to get Attributes
+ HOSTNAME: #{node['hostname']}
+ IPADDRESS: #{node['ipaddress']}
+ CPU: #{node['cpu']['0']['mhz']}
+ MEMORY: #{node['memory']['total']}"
+ owner 'root'
+ group 'root'
+action :create
+end
+
+*********	
+
+execute "run a script" do
+ command <<-EOH
+ #EOH mean End of here or End of hunk
+ mkdir /data/devops
+ touch /data/devops/devopsfile.txt
+ EOH
+end
+
+*********
+
+user "devopsuser" do
+action :create
+end
+
+*********
+
+group "devopsgroup" do
+action :create
+members 'pankaj'
+append true
+end
+
+*********
+%w(httpd unzip git mariadb-server)
+	.each do |p|
+package p do
+action :install
+end
+end
+
+
+
+*********
+
+***To run multiple recipe in single run, include it in default recipe*********
+--Note : not mandatory to include in default recipe, one can at other one also. but make sure to pass while executing the same.
+include_recipe "<cookbookname::recipename1>"
+include_recipe "<cookbookname::recipename2>"
+include_recipe "<cookbookname::recipename3>"
+include_recipe "<cookbookname::recipename4>"
+
+***Syntax to run multiple recipe of different cookbook********
+chef-client -zr "recipe[cookbookname1::recipename],"recipe[cookbookname2::recipename]
+
+****Syntax to run multiple recipe of same & different cookbook
+chef-client -zr "recipe[cookbookname1::default],"recipe[cookbookname2::default]
+					or
+chef-client -zr "recipe[cookbookname1],"recipe[cookbookname2]
+
+*********Create chef account, download starter kit & transfer the same on workstation*********
+Note : -- unzip to your working location.
+unzip <starter-client.zip>
+
+*********Bootstraping Node / client machine to chef server*********
+knife bootstrap <client-ip or fqdn> --ssh-user <username> -i <private key in pem format> -N <node / client server name>
+eg. knife bootstrap 192.168.1.130 --ssh-user root -i id_rsa -N node1-client
+
+*********To upload cookbook on chef server*********
+Note : Inside chef-repo location
+knife cookbook upload <cookbookname>
+eg. knife cookbook upload cbdemo
+
+*********To check uploaded cookbook*********
+knife cookbook list
+
+******To list out attached node to chef server*********
+knife node list
+
+*********To add recipe in node runlist*********
+knife node run_list set <nodename> "recipe[<cookbookname>::<recipename>]"
+eg. knife node run_list set node1-client "recipe[cbdemo::demo2-recipe]"
+
+*********To check runlist on perticuler node*********
+knife node show <nodename>
+eg. knife node show node1-client
+
+********To automate, add knife-client command in crontab********
+vi crontab
+* * * * * knife-client
+esc
+:wq!
+
+
+*********To delete cookbook / node from chef server*********
+knife cookbook delete <cookbookname> -y
+knife node delete <nodename>
+
+
+*********To create role**************************************
+Note : working directory chef-repo
+vi roles/<rolename>.rb
+
+eg. vi roles/devops.rb
+name "devops"
+description "This is role for node-client"
+run_list "recipe[<cookbookname>::<recipename>]"
+
+wq!
+
+*********Upload role to chef server****************************
+knife role from file roles/<rolename>.rb
+eg. knife role from file roles/devops.rb
+
+Note : make sure metioned recipe should be uploaded on chef server.
+
+
+*********To list out role **************************************
+knife role list
+
+*********To delete role from chef server************************
+knife role delete <rolename>
+
